@@ -1,0 +1,51 @@
+# HDD (Honda) data and anything derived from it never goes into this repository: no video frames,
+# features, checkpoints, per-frame predictions, coordinates or session lists. Experiment outputs
+# live on the server under ~/workspace/hdd/.
+*.npy
+*.npz
+*.memmap
+*.h5
+*.hdf5
+*.parquet
+*.feather
+*.pkl
+*.pickle
+*.zarr/
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+*.mp4
+*.webm
+*.mov
+*.avi
+*.mkv
+*.m4v
+*.jpg
+*.jpeg
+*.gif
+*.png
+# Report figures are allowed, but never ones that show video frames.
+!figures/*.png
+!figures/*.svg
+splits/
+results/
+swanlog/
+sessions.csv
+summary.json
+*hdd*.csv
+*hdd*.json
+hdd/**/*.csv
+hdd/**/*.json
+*.log
+logs/
+
+# Python and editor files
+__pycache__/
+*.pyc
+.pytest_cache/
+venv/
+.venv/
+.idea/
+.vscode/
+.DS_Store

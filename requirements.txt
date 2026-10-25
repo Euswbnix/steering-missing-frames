@@ -1,0 +1,11 @@
+# The environment that produced the reported results (Ubuntu 24.04, RTX 5090, driver 590.48.01).
+# torch was the CUDA 13.0 build (2.14.0+cu130); install the build that matches your driver.
+torch==2.14.0
+numpy==2.2.6
+ncps==1.0.1
+scipy==1.15.3
+pandas==2.3.3
+opencv-python-headless==5.0.0.93
+matplotlib==3.10.9
+swanlab==0.7.15
+pytest==9.1.1
