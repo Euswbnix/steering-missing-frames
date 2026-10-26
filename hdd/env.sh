@@ -15,3 +15,4 @@ export TORCH_HOME="$W/.cache/torch" \
 # Credentials stay in ~/.swanlab/.netrc (the user's own login); tracking.py only reads them.
 mkdir -p "$TORCHINDUCTOR_CACHE_DIR" "$TRITON_CACHE_DIR" "$CUDA_CACHE_PATH" "$MPLCONFIGDIR" "$TMPDIR"
 mkdir -p -m 700 "$SWANLAB_LOG_DIR"
+chmod 700 "$SWANLAB_LOG_DIR"
