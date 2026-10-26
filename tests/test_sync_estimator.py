@@ -67,3 +67,29 @@ def test_low_frequency_signal_still_recovers():
     e = np.sin(2 * np.pi * t / 900) + 0.3 * np.sin(2 * np.pi * t / 300)
     k, corr, _ = S.ncc_lag(np.roll(e, -12)[13:-13], e[13:-13], max_lag=40)
     assert k == -12 and abs(corr) > 0.99
+
+
+@pytest.mark.parametrize("true_lag", [-11, 0, 11])
+def test_missing_frames_keep_their_place_in_time(tmp_path, true_lag):
+    """Frames with a missing value must stay on the time axis. Until 2026-10-26 session_windows
+    deleted them before the search, so 8% missing turned an 11-frame lag into 10."""
+    n = 3601                                       # two 60 s windows at 30 Hz
+    t = np.arange(n) / 30.0
+    steer = signals(n, seed=3)
+    shift = np.roll(steer * 10.0 / 30.0, true_lag)
+    shift[np.random.default_rng(4).random(n) < 0.08] = np.nan
+    npz = tmp_path / "session.npz"
+    np.savez(npz, t_ros=t, t_cam=t, shift_px=shift, speed_mps=np.full(n, 10.0), steer=steer)
+    rows, _, _ = S.session_windows(npz, None, "session", max_lag_s=2.0, signal="steer")
+    assert len(rows) == 2
+    assert [round(r["lag_s"] * 30) for r in rows] == [true_lag, true_lag]
+
+
+def test_nan_pairs_are_skipped_not_deleted():
+    e = signals(seed=5)
+    f = np.roll(e, 11)[12:-12].copy()
+    e = e[12:-12].copy()
+    bad = np.random.default_rng(6).random(len(e)) < 0.1
+    f[bad] = e[bad] = np.nan
+    k, corr, _ = S.ncc_lag(f, e, max_lag=40)
+    assert k == 11 and abs(corr) > 0.9

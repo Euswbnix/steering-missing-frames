@@ -23,6 +23,11 @@ windows (--selftest, and hdd/tests/test_sync_estimator.py):
 So the estimate uses the per-frame signals and a Pearson correlation computed on the overlapping
 samples only. Run --selftest after touching any of it.
 
+Until 2026-10-26 the windows also deleted frames with a missing value before the search. That closes
+up the time axis, so a lag spanning deleted frames read short by those frames (8% missing turned an
+11-frame lag into 10). Missing values are now NaN in place, and each candidate lag uses only the
+pairs valid on both sides.
+
     python hdd/sync_check.py --features ~/workspace/hdd/features/dinov2_s10 --raw ~/workspace/hdd/raw \
         --out ~/workspace/hdd/checks/sync_check.json --signal steer --max-lag-s 5
 """
@@ -70,14 +75,17 @@ def yaw_at(raw, session, t):
 
 def ncc_lag(a, b, max_lag):
     """Lag k maximising |corr(a[n+k], b[n])|, computed on the overlap only, with the correlation
-    there and the curvature of the peak. Returns (lag, corr, peak_sharpness)."""
+    there and the curvature of the peak. NaN samples are left out pair by pair, so the time axis
+    stays as recorded. Returns (lag, corr, peak_sharpness)."""
     rs = np.full(2 * max_lag + 1, np.nan)
     for j, k in enumerate(range(-max_lag, max_lag + 1)):
         x, y = (a[k:], b[:len(b) - k or None]) if k >= 0 else (a[:k], b[-k:])
         n = min(len(x), len(y))
-        if n < MIN_OVERLAP:
-            continue
         x, y = x[:n], y[:n]
+        ok = np.isfinite(x) & np.isfinite(y)
+        if ok.sum() < MIN_OVERLAP:
+            continue
+        x, y = x[ok], y[ok]
         if x.std() == 0 or y.std() == 0:
             continue
         rs[j] = np.corrcoef(x, y)[0, 1]
@@ -113,13 +121,13 @@ def session_windows(npz, raw, session, max_lag_s, signal="yaw"):
         m = np.isfinite(expected[sl]) & np.isfinite(shift[sl]) & np.isfinite(speed[sl])
         if m.mean() < 0.9 or np.nanmean(speed[sl][m]) < MIN_MOVING:
             continue
-        e, f = expected[sl][m], shift[sl][m]
-        if e.std() < MIN_YAW_STD * med_dt or f.std() == 0 or len(e) < 4 * max_lag:
+        e, f = np.where(m, expected[sl], np.nan), np.where(m, shift[sl], np.nan)   # keep the time axis
+        if np.nanstd(e) < MIN_YAW_STD * med_dt or np.nanstd(f) == 0 or m.sum() < 4 * max_lag:
             continue
         k, corr, sharp = ncc_lag(f, e, max_lag)
         if k is None:
             continue
-        rows.append(dict(t_mid=float(t[sl][m][len(e) // 2]), lag_s=float(k * med_dt), corr=corr,
+        rows.append(dict(t_mid=float(t[sl][m][m.sum() // 2]), lag_s=float(k * med_dt), corr=corr,
                          sharpness=sharp, resid_s=float(np.median(resid[sl])), n=int(m.sum())))
     return rows, float(np.median(np.abs(resid))), float(np.max(np.abs(resid)))
 
@@ -139,8 +147,8 @@ def selftest(features, raw, injections=(0.0, -0.5, -0.2, -0.1, 0.1, 0.2, 0.5), n
             m = np.isfinite(e_all[sl]) & np.isfinite(shift[sl]) & np.isfinite(speed[sl])
             if m.mean() < 0.9 or np.nanmean(speed[sl][m]) < MIN_MOVING:
                 continue
-            e, f = e_all[sl][m], shift[sl][m]
-            if e.std() < MIN_YAW_STD * med_dt or f.std() == 0:
+            e, f = np.where(m, e_all[sl], np.nan), np.where(m, shift[sl], np.nan)
+            if np.nanstd(e) < MIN_YAW_STD * med_dt or np.nanstd(f) == 0:
                 continue
             wins.append((e, f, med_dt))
             if len(wins) >= 60:
