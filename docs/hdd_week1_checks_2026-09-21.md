@@ -2,8 +2,8 @@
 
 > 2026-10-15 用词改写：只把内部代号和自造词换成了直白的说法，数字、方案和结论都没有改。改写前的原文见 git 历史（提交 766d141 及更早）。
 
-日期：2026-09-21。对应 [`dataset_survey_2026-09-21.md`](dataset_survey_2026-09-21.md) 的"第一周要做的检查"和
-[`decision_2026-09-21_keep_driving.md`](decision_2026-09-21_keep_driving.md) 的第一轮检查（数据）。
+日期：2026-09-21。对应 [`dataset_survey_2026-09-21.md`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/docs/dataset_survey_2026-09-21.md) 的"第一周要做的检查"和
+[`decision_2026-09-21_keep_driving.md`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/docs/decision_2026-09-21_keep_driving.md) 的第一轮检查（数据）。
 
 **全程没有查看任何画面。** 检查只用 CAN、GPS 和时间戳 CSV，以及视频容器的元数据（帧数、帧率、分辨率）。数据留在服务器上，权限仅限本人。
 本文只收录汇总统计，不含坐标、轨迹或逐帧数据。文中出现的会话 ID 都已经在 TRN.pytorch 仓库中公开（137 个中有 136 个公开）。
@@ -19,9 +19,9 @@
 > - 初版说 2 km 区块"测试集约 120 个，比 36 个会话多，统计功效更好"。区块大小很不均匀，按数据量折算的有效数只有约 17 个；而且同一次驾驶穿过多个区块，相邻区块共享道路和天气，区块之间并不独立，17 只是上限。这个说法撤回；
 > - 区块划分现在还删掉离 val 50 m 以内的测试点，并丢掉 5 秒历史窗口不完整的样本，数字随之变化。
 >
-> 几种划分方案的比较见 [`discussion_2026-09-21_next_steps.md`](discussion_2026-09-21_next_steps.md)。
+> 几种划分方案的比较见 [`discussion_2026-09-21_next_steps.md`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/docs/discussion_2026-09-21_next_steps.md)。
 
-脚本是 [`hdd/week1_checks.py`](../hdd/week1_checks.py)、[`hdd/timestamp_gaps.py`](../hdd/timestamp_gaps.py)、[`hdd/geo_split_feasibility.py`](../hdd/geo_split_feasibility.py)、[`hdd/drift_exclusion.py`](../hdd/drift_exclusion.py)、[`hdd/extract_features.py`](../hdd/extract_features.py) 和 [`hdd/sync_check.py`](../hdd/sync_check.py)，在服务器上各约半分钟跑完。
+脚本是 [`hdd/week1_checks.py`](../hdd/week1_checks.py)、[`hdd/timestamp_gaps.py`](../hdd/timestamp_gaps.py)、[`hdd/geo_split_feasibility.py`](../hdd/geo_split_feasibility.py)、[`hdd/drift_exclusion.py`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/hdd/drift_exclusion.py)、[`hdd/extract_features.py`](../hdd/extract_features.py) 和 [`hdd/sync_check.py`](../hdd/sync_check.py)，在服务器上各约半分钟跑完。
 
 ## 结论
 
@@ -75,7 +75,7 @@
   - 这些间隔的总长是 1.77 小时，但每个间隔本来就该有一个正常帧距，扣掉之后，真正缺失的约 0.9 小时，约 10 万帧（0.9%）。大多数断档只丢了一帧。
   - 超过 1 秒的断档共 100 处，只出现在 8 个会话里，最长 23.6 秒。
   - 17 个会话缺帧时间超过 1%，只有 1 个超过 10%（21%）。
-- 帧率混合的会话（201703081749，37 分钟）：37% 的帧间隔约 33 ms，63% 约 65 ms，两种帧率交替出现，平均 18.4 fps。
+- 帧率混合的会话（1 段，37 分钟）：37% 的帧间隔约 33 ms，63% 约 65 ms，两种帧率交替出现，平均 18.4 fps。
 - 4 个会话的 CAN 有超过 1 秒的断档，最长 32 分钟。落在 CAN 时间范围之外的帧共 7,990 帧，主要在会话首尾，需要裁掉。
 - 视频合计 105.1 小时，CAN 合计 107.9 小时。有 6 个会话的视频只覆盖了 CAN 时长的不到 90%，最少的只有 40%。
 - **ROS 时间戳与相机时钟的对照**（`hdd/timestamp_gaps.py`）：
@@ -84,7 +84,7 @@
   - 两种时间的速率差，中位数 30 ppm，属于正常的晶振误差。拟合掉这一项后，ROS 时间戳相对相机时钟的偏差中位数 0.7 ms，99% 分位约 7 ms（各会话的中位数）。
   - **但有 13 个会话（9.3 小时），扣除速率差之后的偏差最大超过 1 秒，最多约 12 秒**；最大超过 0.2 秒的有 15 个会话（12.0 小时）。按时长算，偏差超过 1 秒的合计约 16 分钟，超过 0.2 秒的约 2.2 小时。
   - 偏差是逐渐变化的：这些会话里相邻两帧之间最多变化 79 ms，没有跳变；相机时钟上的断档也都能在 ROS 时间戳上看到。
-  - 如果把偏差超过 0.2 秒的时段连同 5 秒历史窗口一起排除，丢掉全部预测样本的 2.3%（按讨论文档里按整段驾驶划分的方案，验证集丢 6.2%）。15 个会话里只有 6 个的异常落在预测样本上，其余只出现在停车或没有标签的帧上（`hdd/drift_exclusion.py`）。
+  - 如果把偏差超过 0.2 秒的时段连同 5 秒历史窗口一起排除，丢掉全部预测样本的 2.3%（按讨论文档里按整段驾驶划分的方案，验证集丢 6.2%）。15 个会话里只有 6 个的异常落在预测样本上，其余只出现在停车或没有标签的帧上（旧仓库的 [`hdd/drift_exclusion.py`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/hdd/drift_exclusion.py)）。
   - 两种可能的原因是接收端积压（画面与转角会错开）或主机时钟被校时服务调整（不会错开）。**已经用画面核对，结论是后者**：对这 13 个会话用 ±15 秒的搜索范围、以转向角为参照，画面与转角的时间差中位数是 0.000 秒，时间差随时钟偏差变化的斜率是 0.14；如果是接收端积压，这个斜率应该接近 1（第 4 节）。
 
 ### 2. 单位与正负号
@@ -135,7 +135,7 @@
 
 ## 对设计的影响
 
-需要团队决定的事项写在 [`discussion_2026-09-21_next_steps.md`](discussion_2026-09-21_next_steps.md)，本文不替团队做决定。主要有：
+需要团队决定的事项写在 [`discussion_2026-09-21_next_steps.md`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/docs/discussion_2026-09-21_next_steps.md)，本文不替团队做决定。主要有：
 
 1. **主问题与划分方式**：检验"新的驾驶"还是"新的地理区域"；按路线成组留出整段会话、随机按会话、按 2 km 地理区块三种方案的对比见讨论文档。
 2. ~~**同步核对**~~：已完成，见第 4 节；画面与转角对齐，时钟漂移的时段不用排除。
@@ -157,9 +157,10 @@
 python hdd/week1_checks.py --raw ~/workspace/hdd/raw --split trn_data_info.json --out ~/workspace/hdd/checks --fallback-ratio 3.6
 python hdd/timestamp_gaps.py --raw ~/workspace/hdd/raw --out ~/workspace/hdd/checks/timestamp_gaps.json
 python hdd/geo_split_feasibility.py --tracks ~/workspace/hdd/checks/tracks_1hz.npz --split trn_data_info.json \
-    --sessions-csv ~/workspace/hdd/checks/sessions.csv --exclude 201706081335 201706081445 201706081626 201706081707
+    --sessions-csv ~/workspace/hdd/checks/sessions.csv --exclude <4 个会话，编号见服务器上的划分文件>
+# drift_exclusion.py 在旧仓库
 python hdd/drift_exclusion.py --raw ~/workspace/hdd/raw --checks ~/workspace/hdd/checks \
-    --exclude 201706081335 201706081445 201706081626 201706081707
+    --exclude <4 个会话，编号见服务器上的划分文件>
 python hdd/extract_features.py --videos ~/workspace/hdd/video --raw ~/workspace/hdd/raw \
     --out ~/workspace/hdd/features/dinov2_s10 --stride 10 --workers 6
 python hdd/sync_check.py --features ~/workspace/hdd/features/dinov2_s10 --raw ~/workspace/hdd/raw \
@@ -169,4 +170,4 @@ python hdd/sync_check.py --features ~/workspace/hdd/features/dinov2_s10 --raw ~/
 
 - `trn_data_info.json` 来自 TRN.pytorch 仓库的 `data/data_info.json`。
 - `--fallback-ratio 3.6` 只用于没有 GPS 的会话，把 km/h 换算成 m/s。
-- CAN、GPS、时间戳和划分统计来自 2026-09-21 用当前三个脚本的同一次运行，划分数字只计有视频、有有效标签的行驶点。视频容器的元数据（帧数、分辨率、帧率）由 `hdd/probe_videos.sh` 读取；帧率混合会话的间隔构成是单独统计的。
+- CAN、GPS、时间戳和划分统计来自 2026-09-21 用当前三个脚本的同一次运行，划分数字只计有视频、有有效标签的行驶点。视频容器的元数据（帧数、分辨率、帧率）由旧仓库的 [`hdd/probe_videos.sh`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/hdd/probe_videos.sh) 读取；帧率混合会话的间隔构成是单独统计的。
