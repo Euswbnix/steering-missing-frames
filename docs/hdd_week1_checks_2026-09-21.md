@@ -1,166 +1,159 @@
-# HDD 第一周检查
+# HDD week-1 checks
 
-> 2026-10-15 用词改写：只把内部代号和自造词换成了直白的说法，数字、方案和结论都没有改。改写前的原文见 git 历史（提交 766d141 及更早）。
+> English translation (2026-10-27) of the Chinese original; numbers, plans and conclusions are unchanged. The Chinese text is in the earlier project repository at [`b209e2e`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/docs/hdd_week1_checks_2026-09-21.md). On 2026-10-15 internal code names in it were replaced with plain terms; the earlier wording is at commit [`766d141`](https://github.com/Euswbnix/CSC413_Project/tree/766d141) and before.
 
-日期：2026-09-21。对应 [`dataset_survey_2026-09-21.md`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/docs/dataset_survey_2026-09-21.md) 的"第一周要做的检查"和
-[`decision_2026-09-21_keep_driving.md`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/docs/decision_2026-09-21_keep_driving.md) 的第一轮检查（数据）。
+Date: 2026-09-21. Covers the "checks to do in week 1" of [`dataset_survey_2026-09-21.md`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/docs/dataset_survey_2026-09-21.md) and the first round of checks (data) of
+[`decision_2026-09-21_keep_driving.md`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/docs/decision_2026-09-21_keep_driving.md).
 
-**全程没有查看任何画面。** 检查只用 CAN、GPS 和时间戳 CSV，以及视频容器的元数据（帧数、帧率、分辨率）。数据留在服务器上，权限仅限本人。
-本文只收录汇总统计，不含坐标、轨迹或逐帧数据。文中出现的会话 ID 都已经在 TRN.pytorch 仓库中公开（137 个中有 136 个公开）。
+**No frames were viewed at any point.** The checks use only the CAN, GPS and timestamp CSVs and the video container metadata (frame count, frame rate, resolution). The data stays on the server, readable only by the owner.
+This document contains only aggregate statistics: no coordinates, trajectories or per-frame data. Any session IDs mentioned are already public in the TRN.pytorch repository (136 of the 137 are public).
 
-> **更正（同日）**：初版有几处结论和数字不对，已经改正：
-> - 初版说"按行程划分做不到道路不重叠"，但当时只算了单个会话与其余会话的重合，没有试过成组留出。实际按路线成组留出整段会话是可行的；
-> - 丢帧时长初版算的是断档所在间隔的全长，实际缺失约为一半；
-> - "15 Hz 的会话"其实是帧率混合；
-> - 重合比例改为只计行驶中、有视频、有有效标签的点，并排除 GPS 有误的会话；
-> - 转角标签改为不跨 CAN 断档插值；
-> - **2026-09-22 的同步核对第一版是错的**：它把逐帧信号先累积成航向再互相关，又按固定长度而不是重叠长度归一化，两者都把估计拉向 0。当时报告的"时间差 −0.004 秒"是估计量的固定点，不是测量结果，已撤回。修正后的方法和结果见第 4 节；
-> - 初版说"与画面同步的 100 Hz 转向角"已确认，实际只确认了时间戳对齐，而且后来发现部分会话的 ROS 时间戳与相机时钟有漂移，同步还没确认；
-> - 初版说 2 km 区块"测试集约 120 个，比 36 个会话多，统计功效更好"。区块大小很不均匀，按数据量折算的有效数只有约 17 个；而且同一次驾驶穿过多个区块，相邻区块共享道路和天气，区块之间并不独立，17 只是上限。这个说法撤回；
-> - 区块划分现在还删掉离 val 50 m 以内的测试点，并丢掉 5 秒历史窗口不完整的样本，数字随之变化。
+> **Corrections (same day)**: several conclusions and numbers in the first version were wrong and have been corrected:
+> - The first version said "a split by trip cannot avoid overlapping roads", but it had only computed the overlap of single sessions with all the others and had not tried holding out groups. Holding out whole sessions grouped by route is in fact feasible;
+> - For dropped-frame time the first version counted the full length of each interval containing a gap; the time actually missing is about half of that;
+> - The "15 Hz session" is in fact a mixed frame rate;
+> - Overlap shares now count only points that are moving, have video and have a valid label, and exclude sessions with faulty GPS;
+> - Steering labels are no longer interpolated across CAN gaps;
+> - **The first version of the sync check on 2026-09-22 was wrong**: it accumulated the per-frame signals into a heading before cross-correlating, and normalised by a fixed length instead of the overlap length; both pull the estimate toward 0. The "lag of −0.004 s" reported then was a fixed point of the estimator, not a measurement, and is withdrawn. The corrected method and results are in section 4;
+> - The first version said the "100 Hz steering angle synchronised with the frames" was confirmed. Only timestamp alignment had been confirmed, and it was later found that in some sessions the ROS timestamps drift against the camera clock, so synchronisation was not yet confirmed;
+> - The first version said 2 km blocks give "about 120 test blocks, more than the 36 sessions, so better statistical power". The blocks are very uneven in size and the effective number weighted by data is only about 17; moreover one drive passes through several blocks and neighbouring blocks share roads and weather, so the blocks are not independent and 17 is only an upper bound. That claim is withdrawn;
+> - The block split now also removes test points within 50 m of val and drops samples whose 5 s history window is incomplete; the numbers changed accordingly.
 >
-> 几种划分方案的比较见 [`discussion_2026-09-21_next_steps.md`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/docs/discussion_2026-09-21_next_steps.md)。
+> The split options are compared in [`discussion_2026-09-21_next_steps.md`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/docs/discussion_2026-09-21_next_steps.md).
 
-脚本是 [`hdd/week1_checks.py`](../hdd/week1_checks.py)、[`hdd/timestamp_gaps.py`](../hdd/timestamp_gaps.py)、[`hdd/geo_split_feasibility.py`](../hdd/geo_split_feasibility.py)、[`hdd/drift_exclusion.py`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/hdd/drift_exclusion.py)、[`hdd/extract_features.py`](../hdd/extract_features.py) 和 [`hdd/sync_check.py`](../hdd/sync_check.py)，在服务器上各约半分钟跑完。
+The scripts are [`hdd/week1_checks.py`](../hdd/week1_checks.py), [`hdd/timestamp_gaps.py`](../hdd/timestamp_gaps.py), [`hdd/geo_split_feasibility.py`](../hdd/geo_split_feasibility.py), [`hdd/drift_exclusion.py`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/hdd/drift_exclusion.py), [`hdd/extract_features.py`](../hdd/extract_features.py) and [`hdd/sync_check.py`](../hdd/sync_check.py); each runs in about half a minute on the server.
 
-## 结论
+## Conclusions
 
-**第一轮检查的四项要求都已满足：多行程、逐帧时间戳、画面与转角同步都已确认，划分也有可行方案。**
-- 已确认：137 个独立会话；逐帧时间戳；100 Hz 转向角在时间戳层面已对齐。
-- **同步已确认（2026-09-22，修正版）**：画面与**转向角**对齐，134 个有可用窗口的会话时间差中位数 0.000 秒；3 个会话没有可用窗口，属于未核对。CAN 的**横摆角速度**比画面晚约 0.1 秒，不能拿它当标签对时的参照。时钟漂移的会话没有额外错位，原计划排除的 2.2 小时不用排除（第 4 节）。
-- 划分：按路线把整段会话成组留出，或者按地理区块划分，都可行。选哪种待团队决定。
+**All four requirements of the first round of checks are met: multiple trips, per-frame timestamps and frame–steering synchronisation are confirmed, and a feasible split exists.**
+- Confirmed: 137 separate sessions; per-frame timestamps; the 100 Hz steering angle aligned at the timestamp level.
+- **Synchronisation confirmed (2026-09-22, corrected version)**: the frames are aligned with the **steering angle**; over the 134 sessions with usable windows the median lag is 0.000 s; 3 sessions have no usable window and are unchecked. The CAN **yaw rate** lags the frames by about 0.1 s and cannot be the reference for timing the labels. Sessions with clock drift show no extra misalignment, so the 2.2 hours that were to be excluded do not need to be (section 4).
+- Split: holding out whole sessions grouped by route and splitting by geographic block are both feasible. Which one to use is for the team to decide.
 
-1. **公开划分不能用作地理留出。** TRN 仓库的划分（训练 100 个会话，测试 36 个）中，只看行驶中的点，36 个测试会话平均有 37% 的点离训练轨迹不到 50 m（合起来算是 28%）；12 个测试会话超过一半。训练集里有 9 个会话没有可用 GPS，没算进去，所以这是下限。
-2. **单个会话与其他会话大量重合，但按路线成组留出可行。**
-   - 中位数的会话有 78% 的行驶点离别的会话轨迹不到 50 m；不到 10% 的只有 3 个会话。随机按会话划分时，测试集有 64% 的点离训练或验证轨迹不到 50 m。
-   - 用贪心搜索可以找到一组 49 个会话：占行驶数据的 25%，只有 10% 的点离其余会话不到 50 m。
-3. **按 2 km 地理区块划分也可行，但有效单位少。**
-   - 把区块随机分给 train/val/test（63/12/25%），删掉 val 中离 train、test 中离 train 或 val 50 m 以内的点，再丢掉历史窗口（5 秒）不完整的样本：测试集仍占行驶数据的 24%（20 次随机抽取中最少 19%）。
-   - 但测试集来自 97 个会话，其中 92 个也在训练集里；约 93 个测试区块大小很不均匀，按数据量折算的有效数（Kish）只有约 17 个。
-4. **原始数据里本来就有真实的不规则采样。**
-   - 按相机时钟估计共缺约 9.8 万帧（0.9%），大多是单帧丢失；超过 1 秒的断档有 97 处，只出现在 7 个会话里（按 ROS 时间戳是 100 处、8 个会话）。
-   - 按 ROS 时间戳，17 个会话缺帧时间超过 1%，1 个超过 10%。
-   - 另有 1 个会话帧率混合：约 3/4 的时间是 15 Hz，其余是 30 Hz。
-5. **弯道比例比 SullyChen 还低。** 行驶中的帧里，|转角| < 5° 的占 62%（SullyChen 训练集为 42.6%）。但数据总量大，≥ 15° 的帧仍有约 110 万。
-6. **转角的正负号与 nuScenes 相反。** HDD 中正值表示右转，nuScenes 中正值表示左转。
+1. **The public split cannot be used as a geographic hold-out.** In the TRN repository's split (100 training sessions, 36 test sessions), counting only moving points, the 36 test sessions have on average 37% of their points within 50 m of a training trajectory (28% pooled); 12 test sessions are above half. 9 training sessions have no usable GPS and were not counted, so this is a lower bound.
+2. **Single sessions overlap heavily with the others, but holding out groups by route is feasible.**
+   - The median session has 78% of its moving points within 50 m of another session's trajectory; only 3 sessions are below 10%. With a random split by session, 64% of the test points are within 50 m of a training or validation trajectory.
+   - A greedy search finds a group of 49 sessions that holds 25% of the moving data, with only 10% of its points within 50 m of the remaining sessions.
+3. **A split by 2 km geographic blocks is also feasible, but has few effective units.**
+   - Assign blocks at random to train/val/test (63/12/25%), remove val points within 50 m of train and test points within 50 m of train or val, then drop samples whose history window (5 s) is incomplete: the test split still holds 24% of the moving data (at least 19% over 20 random draws).
+   - But the test points come from 97 sessions, 92 of which are also in training; the roughly 93 test blocks are very uneven in size, and their effective number weighted by data (Kish) is only about 17.
+4. **The raw data already contains real irregular sampling.**
+   - By the camera clock about 98,000 frames (0.9%) are missing in total, mostly single frames; there are 97 gaps longer than 1 s, in only 7 sessions (by ROS timestamps, 100 gaps in 8 sessions).
+   - By ROS timestamps, 17 sessions are missing more than 1% of their time and 1 is missing more than 10%.
+   - 1 further session has a mixed frame rate: about 3/4 of the time at 15 Hz, the rest at 30 Hz.
+5. **Curves are even rarer than in SullyChen.** Among moving frames, |steering angle| < 5° makes up 62% (SullyChen training set: 42.6%). But the dataset is large, so there are still about 1.1 million frames at ≥ 15°.
+6. **The steering sign is the opposite of nuScenes.** In HDD a positive value means a right turn; in nuScenes it means a left turn.
 
-## 包里有什么
+## What is in the package
 
-下载文件 149 GB，内含 7 个子压缩包，全部完整解压过一遍，CRC 校验通过。
+The download is 149 GB and contains 7 sub-archives, all fully extracted once, with CRC checks passing.
 
-| 内容 | 大小 | 说明 |
+| Content | Size | Notes |
 |---|---|---|
-| `release_2019_07_08` | 115 GB | 137 个会话，每个会话有一段前视视频（mp4）、6 个 CAN CSV、一个 EAF 标注文件；其中 132 个会话另有 2 个 GPS CSV |
-| `release_2019_07_25` | 0.5 GB | 每个会话的逐帧时间戳（`png_timestamp.csv`） |
-| `20200710_images` | 34 GB | TRN 论文预先抽取的 113 万张 JPEG 帧（只列了目录，没有解压） |
-| `20200710_sensors`、`_labels` | 10 MB | TRN 预先提取的 8 维传感器数据和 12 类驾驶行为标签 |
-| `EAF_parsing` | 3 MB | 官方标注解析脚本 |
+| `release_2019_07_08` | 115 GB | 137 sessions, each with one front-camera video (mp4), 6 CAN CSVs and one EAF annotation file; 132 sessions also have 2 GPS CSVs |
+| `release_2019_07_25` | 0.5 GB | per-frame timestamps of each session (`png_timestamp.csv`) |
+| `20200710_images` | 34 GB | 1.13 million JPEG frames pre-extracted for the TRN paper (only the directory was listed, not extracted) |
+| `20200710_sensors`, `_labels` | 10 MB | 8-dim sensor data and 12-class driving-behaviour labels pre-extracted by TRN |
+| `EAF_parsing` | 3 MB | official annotation parsing scripts |
 
-- 视频：137 个全部能打开，都是 1280×720，标称 30 fps。**每个视频的帧数与时间戳文件的行数完全一致（137/137）**，所以第 i 帧就对应时间戳文件第 i 行。
-- CAN：转向角、转向速度、横摆角速度、车速、油门、刹车、转向灯，全部 137 个会话都有，约 100 Hz。
-- GPS：132 个会话有 RTK 定位；其中 2017-06-08 的 4 个会话 GPS 明显有误，可用的是 128 个。
+- Video: all 137 open, all 1280×720, nominal 30 fps. **In every video the frame count equals the number of rows in the timestamp file (137/137)**, so frame i corresponds to row i of the timestamp file.
+- CAN: steering angle, steering speed, yaw rate, vehicle speed, throttle, brake and turn signal, in all 137 sessions, at about 100 Hz.
+- GPS: 132 sessions have RTK positions; the GPS of the 4 sessions from 2017-06-08 is clearly faulty, leaving 128 usable.
 
-## 逐项检查
+## Checks in detail
 
-### 1. 时间戳
+### 1. Timestamps
 
-| | 帧 | CAN 转向 |
+| | Frames | CAN steering |
 |---|---|---|
-| 中位间隔 | 33.3 ms（136 个会话），1 个会话为 65 ms（帧率混合，见下） | 10.0 ms |
-| 抖动（1%–99% 分位，会话中位数） | 26.9–40.2 ms | — |
-| 时间倒退 | 0 | 0 |
+| Median interval | 33.3 ms (136 sessions), 65 ms in 1 session (mixed frame rate, see below) | 10.0 ms |
+| Jitter (1%–99% quantiles, session median) | 26.9–40.2 ms | — |
+| Time going backwards | 0 | 0 |
 
-- 每个会话开头都有 2–6 帧，间隔超过 0.1 秒（第一个会话是 1–2 秒），之后才稳定下来。**每个会话的开头几帧要丢掉。**
-- 按 ROS 时间戳，帧间隔超过 1.5 倍中位数（约 50 ms）的断档共 92,440 处，平均每 120 帧一处。
-  - 这些间隔的总长是 1.77 小时，但每个间隔本来就该有一个正常帧距，扣掉之后，真正缺失的约 0.9 小时，约 10 万帧（0.9%）。大多数断档只丢了一帧。
-  - 超过 1 秒的断档共 100 处，只出现在 8 个会话里，最长 23.6 秒。
-  - 17 个会话缺帧时间超过 1%，只有 1 个超过 10%（21%）。
-- 帧率混合的会话（1 段，37 分钟）：37% 的帧间隔约 33 ms，63% 约 65 ms，两种帧率交替出现，平均 18.4 fps。
-- 4 个会话的 CAN 有超过 1 秒的断档，最长 32 分钟。落在 CAN 时间范围之外的帧共 7,990 帧，主要在会话首尾，需要裁掉。
-- 视频合计 105.1 小时，CAN 合计 107.9 小时。有 6 个会话的视频只覆盖了 CAN 时长的不到 90%，最少的只有 40%。
-- **ROS 时间戳与相机时钟的对照**（`hdd/timestamp_gaps.py`）：
-  - 帧时间戳是接收端（ROS）打的。时间戳文件里另有一列相机内部时钟，每 128 秒回绕一次，展开后帧间隔非常规则。另一列"计数器"除全部会话共 4 处外每行都加 1，约 9 万处相机时钟断档在它上面都看不出来，是记录端的序号，不能用来判断丢帧。
-  - 这个脚本固定跳过每个会话开头 6 帧，得到 92,432 处 ROS 断档。其中 98% 在相机时钟上也是断档，说明确实少了帧；其余约 1,750 处只是接收晚了。按相机时钟估计共缺约 9.8 万帧（0.9%），与上面按 ROS 时间戳的估计一致。
-  - 两种时间的速率差，中位数 30 ppm，属于正常的晶振误差。拟合掉这一项后，ROS 时间戳相对相机时钟的偏差中位数 0.7 ms，99% 分位约 7 ms（各会话的中位数）。
-  - **但有 13 个会话（9.3 小时），扣除速率差之后的偏差最大超过 1 秒，最多约 12 秒**；最大超过 0.2 秒的有 15 个会话（12.0 小时）。按时长算，偏差超过 1 秒的合计约 16 分钟，超过 0.2 秒的约 2.2 小时。
-  - 偏差是逐渐变化的：这些会话里相邻两帧之间最多变化 79 ms，没有跳变；相机时钟上的断档也都能在 ROS 时间戳上看到。
-  - 如果把偏差超过 0.2 秒的时段连同 5 秒历史窗口一起排除，丢掉全部预测样本的 2.3%（按讨论文档里按整段驾驶划分的方案，验证集丢 6.2%）。15 个会话里只有 6 个的异常落在预测样本上，其余只出现在停车或没有标签的帧上（旧仓库的 [`hdd/drift_exclusion.py`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/hdd/drift_exclusion.py)）。
-  - 两种可能的原因是接收端积压（画面与转角会错开）或主机时钟被校时服务调整（不会错开）。**已经用画面核对，结论是后者**：对这 13 个会话用 ±15 秒的搜索范围、以转向角为参照，画面与转角的时间差中位数是 0.000 秒，时间差随时钟偏差变化的斜率是 0.14；如果是接收端积压，这个斜率应该接近 1（第 4 节）。
+- Every session starts with 2–6 frames spaced more than 0.1 s apart (1–2 s in the first session) before it settles. **The first few frames of each session have to be discarded.**
+- By ROS timestamps there are 92,440 gaps where the frame interval exceeds 1.5 times the median (about 50 ms), on average one every 120 frames.
+  - These intervals add up to 1.77 hours, but each of them would have contained one normal frame spacing anyway; after subtracting that, about 0.9 hours, roughly 100,000 frames (0.9%), are really missing. Most gaps lose a single frame.
+  - There are 100 gaps longer than 1 s, in only 8 sessions; the longest is 23.6 s.
+  - 17 sessions are missing more than 1% of their time, only 1 more than 10% (21%).
+- The mixed-frame-rate session (1 recording, 37 minutes): 37% of the intervals are about 33 ms and 63% about 65 ms, alternating, 18.4 fps on average.
+- 4 sessions have CAN gaps longer than 1 s, the longest 32 minutes. 7,990 frames fall outside the CAN time range, mostly at the start and end of sessions, and have to be trimmed.
+- The videos total 105.1 hours and CAN 107.9 hours. In 6 sessions the video covers less than 90% of the CAN duration, the lowest only 40%.
+- **ROS timestamps against the camera clock** (`hdd/timestamp_gaps.py`):
+  - Frame timestamps are taken on the receiving side (ROS). The timestamp file has another column with the camera's internal clock, which wraps every 128 s; once unwrapped, its frame intervals are very regular. A further "counter" column increases by 1 on every row except in 4 places across all sessions, and none of the roughly 90,000 camera-clock gaps show up in it: it is a sequence number from the recorder and cannot be used to detect dropped frames.
+  - This script always skips the first 6 frames of each session and finds 92,432 ROS gaps. 98% of them are also gaps on the camera clock, so frames really are missing; the other roughly 1,750 only arrived late. By the camera clock about 98,000 frames (0.9%) are missing, in line with the ROS-based estimate above.
+  - The rate difference between the two clocks has a median of 30 ppm, a normal crystal error. With that fitted out, the median deviation of the ROS timestamps from the camera clock is 0.7 ms and the 99% quantile about 7 ms (session medians).
+  - **But in 13 sessions (9.3 hours) the deviation left after removing the rate difference exceeds 1 s at its largest, up to about 12 s**; in 15 sessions (12.0 hours) it exceeds 0.2 s at its largest. By duration, the deviation is above 1 s for about 16 minutes in total and above 0.2 s for about 2.2 hours.
+  - The deviation changes gradually: in these sessions it changes by at most 79 ms between neighbouring frames, with no jumps, and every gap on the camera clock is also visible in the ROS timestamps.
+  - Excluding the stretches where the deviation is above 0.2 s, together with their 5 s history windows, would remove 2.3% of all prediction samples (6.2% of validation under the whole-drive split of the discussion document). Of the 15 sessions only 6 have the deviation on prediction samples; in the rest it falls only on frames while stopped or without labels (the earlier repository's [`hdd/drift_exclusion.py`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/hdd/drift_exclusion.py)).
+  - The two possible causes are a backlog on the receiving side (which would offset frames against steering) or the host clock being adjusted by a time-sync service (which would not). **Checked against the frames: it is the latter.** For these 13 sessions, with a search range of ±15 s and the steering angle as reference, the median frame–steering lag is 0.000 s and the slope of the lag against the clock deviation is 0.14; a receive-side backlog would give a slope close to 1 (section 4).
 
-### 2. 单位与正负号
+### 2. Units and signs
 
-- **车速单位是 km/h。** 与 GPS 轨迹算出的速度相比，比值为 3.610 ± 0.015（126 个会话，范围 3.59–3.75；比值落在 3.4–3.8 之外的 GPS 视为有误，那些会话按 3.6 换算）。
-- **转向角是方向盘角度（°）。** 方向盘角度与曲率（横摆角速度 ÷ 车速）基本成正比：比例系数中位数 2490 °·m（四分位 2471–2508），相关系数中位数 0.996。换算成转向比 × 轴距约为 43.5 m，与一般轿车相符。
-- **正值表示右转。** 两处对照结果一致：
-  - 转角与横摆角速度同号：中位数 100%，最差的会话 99.7%；
-  - 横摆角速度与 GPS 航向的变化方向（顺时针为正）同号：中位数 99.9%。
-- **`rtk_pos.csv` 的表头写反了。** 表头写的是 `lng,lat`，实际数值是纬度在前、经度在后（132 个会话都是）。
-- **`rtk_track.csv` 的航向列不要用。** 它与横摆角速度的同号率约 50%，相当于随机。航向改用 GPS 位置推算。
-- **2017-06-08 的 4 个会话 GPS 不可用。** 由 GPS 推算的速度与 CAN 车速对不上，航向变化也与横摆角速度无关。这 4 个会话与另外 5 个完全没有 GPS 的会话一起，没法参与地理划分。
+- **Vehicle speed is in km/h.** Against the speed derived from the GPS track, the ratio is 3.610 ± 0.015 (126 sessions, range 3.59–3.75; GPS with a ratio outside 3.4–3.8 is treated as faulty and those sessions are converted with 3.6).
+- **The steering angle is the steering-wheel angle (°).** It is essentially proportional to curvature (yaw rate ÷ speed): median coefficient 2490 °·m (quartiles 2471–2508), median correlation 0.996. That corresponds to a steering ratio × wheelbase of about 43.5 m, typical of a car.
+- **A positive value means a right turn.** Two cross-checks agree:
+  - steering angle and yaw rate have the same sign: median 100%, worst session 99.7%;
+  - yaw rate and the change in GPS heading (clockwise positive) have the same sign: median 99.9%.
+- **The header of `rtk_pos.csv` is swapped.** It says `lng,lat`, but the values are latitude first, then longitude (in all 132 sessions).
+- **Do not use the heading column of `rtk_track.csv`.** Its sign agrees with the yaw rate about 50% of the time, i.e. at chance. Heading is derived from the GPS positions instead.
+- **The GPS of the 4 sessions from 2017-06-08 is unusable.** The speed derived from it does not match the CAN speed, and its heading changes are unrelated to the yaw rate. These 4 sessions, together with the 5 sessions that have no GPS at all, cannot take part in a geographic split.
 
-### 3. 转角分布
+### 3. Steering-angle distribution
 
-只统计车速超过 3 m/s、有有效标签的帧，共 668 万帧，占有效标签帧的 60%。区间与 `metrics.py` 的 macro MAE 分箱一致。
+Only frames with speed above 3 m/s and a valid label are counted: 6.68 million frames, 60% of the frames with a valid label. The bins are the macro MAE bins of `metrics.py`.
 
-| \|转角\| | HDD（行驶中） | SullyChen 训练集 |
+| \|steering angle\| | HDD (moving) | SullyChen training set |
 |---|---|---|
 | < 5° | 62.1% | 42.6% |
 | 5–15° | 21.3% | 30.0% |
 | ≥ 15° | 16.6% | 27.4% |
 
-- 各会话 ≥ 15° 的占比差别很大：5% 分位 3.6%，中位数 18.8%，95% 分位 33.6%。
-- 所以宏平均指标和"与常数相比"的对照仍然必要，SullyChen 上看到的类别不平衡问题在 HDD 上不会自动消失。
+- The share at ≥ 15° varies a lot between sessions: 5% quantile 3.6%, median 18.8%, 95% quantile 33.6%.
+- So the macro-averaged metric and the comparison against a constant are still needed; the class imbalance seen on SullyChen does not go away on HDD.
 
-### 4. 帧与标签的同步
+### 4. Frame–label synchronisation
 
-- 每一帧到最近一个 CAN 转向样本的距离：中位数 2.6 ms，99% 分位 6 ms（会话中位数）。
-- 100 Hz 的转角插值到帧时间，但只在前后两个 CAN 样本相距不超过 50 ms 时才插值，不跨 CAN 断档。按这条规则，共约 7.4 万帧（0.7%）没有有效标签。本文的转角统计都是按这条规则算的。
-- **画面与转角确实对齐（2026-09-22，修正版）。**
-  - **方法**：`hdd/extract_features.py` 解码提取特征时顺带记下每帧相对前一帧的画面横向位移；`hdd/sync_check.py` 在 60 秒窗口内，
-    把它与 CAN 推出的转角速度做归一化互相关，只在重叠区域计算 Pearson 相关，搜索范围 ±5 秒。全程只有数字，没有人看画面。
-  - **校准**：把已知偏移注入真实窗口，估计值一一对应（斜率 0.999，`--selftest`）；平滑合成信号上注入 100/300/500/1000 ms，
-    估计为 100/300/499/999 ms。[`tests/test_sync_estimator.py`](../tests/test_sync_estimator.py) 用合成信号守住这条性质。
-  - **结果（画面对转向角，转向角才是标签用的信号）**：134 个会话有可用窗口，共 2348 个窗口，|相关| 中位数 0.74；
-    逐会话时间差中位数 **0.000 秒**。只看窗口数 ≥ 10 的 88 个会话，p10 −0.100 秒、p90 +0.067 秒；估计的分辨率是一帧，约 33 ms。
-  - **画面对横摆角速度是 −0.100 秒**：CAN 的横摆角速度比画面晚约 0.1 秒，像是陀螺仪滤波延迟。
-    **标签对时要以转向角为准**；用横摆角速度会得出"需要把标签平移 0.1 秒"的错误结论。
-  - **时钟漂移的会话没有额外错位**：51 个漂移窗口（6 个会话），时间差中位数 0.000 秒，随时钟偏差变化的斜率 0.138；
-    接收端积压的话应该接近 1。单独对 13 个漂移会话用 ±15 秒搜索，结论相同。
-  - **搜索范围的影响**：±2 秒与 ±5 秒的逐会话中位数都是 0.000 秒；放宽到 ±5 秒后可用窗口从 1816 增加到 2348，
-    没有可用窗口的会话从 9 个减少到 3 个。默认已改为 ±5 秒。
-  - **未核对的**：3 个会话没有可用窗口（转弯太少或太短），它们不算已确认。
-  - **单个窗口噪声大**：逐帧位移被量化到整列（约 0.4°），所以结论看逐会话中位数，不看单个窗口。
-    量化只降低相关强度、不移动相关峰，这一点有合成信号的测试为证。
-- **目视抽查仍然建议做一次**，作为对上面自动核对的独立确认，但它不再是单帧实验的前置条件。可以在服务器上把几段视频叠加转角曲线渲染成文件，本人下载观看。
+- Distance from each frame to the nearest CAN steering sample: median 2.6 ms, 99% quantile 6 ms (session medians).
+- The 100 Hz steering angle is interpolated to frame times, but only where the two neighbouring CAN samples are at most 50 ms apart, never across a CAN gap. Under this rule about 74,000 frames (0.7%) have no valid label. All steering statistics in this document follow this rule.
+- **The frames and the steering angle are indeed aligned (2026-09-22, corrected version).**
+  - **Method**: while decoding for feature extraction, `hdd/extract_features.py` also records each frame's horizontal image shift against the previous frame. `hdd/sync_check.py` computes, in 60 s windows, the normalised cross-correlation between this shift and the steering rate derived from CAN, with the Pearson correlation computed on the overlap only, over a search range of ±5 s. Only numbers are involved throughout; nobody looks at the frames.
+  - **Calibration**: known offsets injected into real windows are recovered one for one (slope 0.999, `--selftest`); offsets of 100/300/500/1000 ms injected into smooth synthetic signals are estimated as 100/300/499/999 ms. [`tests/test_sync_estimator.py`](../tests/test_sync_estimator.py) guards this property with synthetic signals.
+  - **Result (frames against the steering angle, the signal the labels use)**: 134 sessions have usable windows, 2348 windows in all, median |correlation| 0.74; the median of the per-session lags is **0.000 s**. Over the 88 sessions with ≥ 10 windows, p10 is −0.100 s and p90 +0.067 s; the resolution of the estimate is one frame, about 33 ms.
+  - **Frames against the yaw rate give −0.100 s**: the CAN yaw rate lags the frames by about 0.1 s, which looks like gyro filtering delay. **Label timing must be referenced to the steering angle**; using the yaw rate would wrongly suggest shifting the labels by 0.1 s.
+  - **Sessions with clock drift show no extra misalignment**: 51 drift windows (6 sessions), median lag 0.000 s, slope against the clock deviation 0.138; a receive-side backlog would give a slope close to 1. Searching the 13 drifting sessions alone with ±15 s gives the same conclusion.
+  - **Effect of the search range**: the per-session medians are 0.000 s with both ±2 s and ±5 s; widening to ±5 s increases the usable windows from 1816 to 2348 and reduces the sessions without a usable window from 9 to 3. The default is now ±5 s.
+  - **Unchecked**: 3 sessions have no usable window (too few or too short turns) and do not count as confirmed.
+  - **Single windows are noisy**: the per-frame shift is quantised to whole pixel columns (about 0.4°), so conclusions use per-session medians, not single windows. Quantisation lowers the correlation but does not move its peak, as a test on synthetic signals shows.
+- **A visual spot check is still recommended** as an independent confirmation of the automatic check above, but it is no longer a prerequisite for the single-frame experiment. A few videos with the steering curve overlaid could be rendered to files on the server and downloaded for the owner to watch.
 
-## 对设计的影响
+## Implications for the design
 
-需要团队决定的事项写在 [`discussion_2026-09-21_next_steps.md`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/docs/discussion_2026-09-21_next_steps.md)，本文不替团队做决定。主要有：
+The decisions for the team are in [`discussion_2026-09-21_next_steps.md`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/docs/discussion_2026-09-21_next_steps.md); this document does not decide for the team. The main ones:
 
-1. **主问题与划分方式**：检验"新的驾驶"还是"新的地理区域"；按路线成组留出整段会话、随机按会话、按 2 km 地理区块三种方案的对比见讨论文档。
-2. ~~**同步核对**~~：已完成，见第 4 节；画面与转角对齐，时钟漂移的时段不用排除。
-3. **只用行驶中的帧**：停车时的转角从画面上几乎看不出来。
-4. **"原始时间戳断档"补充条件**：主条件只用历史窗口里没有长断档的样本，含长断档的样本单独评估；Δt 用相机时钟算。
-5. **帧率混合的会话和 GPS 不可用的 9 个会话**：建议主实验不用。
-6. **与 nuScenes 合用时**：先把弧度换成度，再统一正负号。如果把 SullyChen 当作域外测试集，也要先核对它的正负号约定。
+1. **Main question and split**: whether to test on "new drives" or on "new geographic areas"; the discussion document compares holding out whole sessions grouped by route, a random split by session and 2 km geographic blocks.
+2. ~~**Sync check**~~: done, see section 4; the frames and the steering angle are aligned, and stretches with clock drift need not be excluded.
+3. **Use moving frames only**: the steering angle while stopped can hardly be seen in the frames.
+4. **Supplementary condition "gaps in the original timestamps"**: the main condition uses only samples whose history window has no long gap; samples with long gaps are evaluated separately; Δt is computed from the camera clock.
+5. **The mixed-frame-rate session and the 9 sessions without usable GPS**: suggested not to be used in the main experiment.
+6. **If combined with nuScenes**: convert radians to degrees first, then unify the sign. If SullyChen is used as an out-of-domain test set, check its sign convention first as well.
 
-## 磁盘
+## Disk
 
-- 服务器上：下载的原始压缩包 149 GB（保留），解压出的 CSV 23 GB。
-- 视频还在压缩包里，没有解压。
-- 读视频时不必整体解压（需要额外 112 GB）：每次把一个视频临时写到磁盘，处理完就删掉。检查视频元数据时已经这样读过全部 137 个。
+- On the server: the downloaded raw archives, 149 GB (kept), and the extracted CSVs, 23 GB.
+- The videos are still inside the archives and have not been extracted.
+- Reading the videos does not require extracting them all (that would need another 112 GB): each video is written to disk temporarily and deleted once processed. All 137 were read this way for the metadata check.
 
-## 复现
+## Reproduction
 
 ```bash
-. hdd/env.sh   # 服务器上：缓存和临时文件都留在 ~/workspace 下
+. hdd/env.sh   # on the server: caches and temporary files stay under ~/workspace
 python hdd/week1_checks.py --raw ~/workspace/hdd/raw --split trn_data_info.json --out ~/workspace/hdd/checks --fallback-ratio 3.6
 python hdd/timestamp_gaps.py --raw ~/workspace/hdd/raw --out ~/workspace/hdd/checks/timestamp_gaps.json
 python hdd/geo_split_feasibility.py --tracks ~/workspace/hdd/checks/tracks_1hz.npz --split trn_data_info.json \
-    --sessions-csv ~/workspace/hdd/checks/sessions.csv --exclude <4 个会话，编号见服务器上的划分文件>
-# drift_exclusion.py 在旧仓库
+    --sessions-csv ~/workspace/hdd/checks/sessions.csv --exclude <4 sessions; IDs are in the split file on the server>
+# drift_exclusion.py is in the earlier repository
 python hdd/drift_exclusion.py --raw ~/workspace/hdd/raw --checks ~/workspace/hdd/checks \
-    --exclude <4 个会话，编号见服务器上的划分文件>
+    --exclude <4 sessions; IDs are in the split file on the server>
 python hdd/extract_features.py --videos ~/workspace/hdd/video --raw ~/workspace/hdd/raw \
     --out ~/workspace/hdd/features/dinov2_s10 --stride 10 --workers 6
 python hdd/sync_check.py --features ~/workspace/hdd/features/dinov2_s10 --raw ~/workspace/hdd/raw \
@@ -168,6 +161,6 @@ python hdd/sync_check.py --features ~/workspace/hdd/features/dinov2_s10 --raw ~/
 python hdd/sync_check.py --features ~/workspace/hdd/features/dinov2_s10 --raw ~/workspace/hdd/raw --selftest
 ```
 
-- `trn_data_info.json` 来自 TRN.pytorch 仓库的 `data/data_info.json`。
-- `--fallback-ratio 3.6` 只用于没有 GPS 的会话，把 km/h 换算成 m/s。
-- CAN、GPS、时间戳和划分统计来自 2026-09-21 用当前三个脚本的同一次运行，划分数字只计有视频、有有效标签的行驶点。视频容器的元数据（帧数、分辨率、帧率）由旧仓库的 [`hdd/probe_videos.sh`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/hdd/probe_videos.sh) 读取；帧率混合会话的间隔构成是单独统计的。
+- `trn_data_info.json` is `data/data_info.json` from the TRN.pytorch repository.
+- `--fallback-ratio 3.6` is used only for sessions without GPS, to convert km/h to m/s.
+- The CAN, GPS, timestamp and split statistics come from a single run of the current three scripts on 2026-09-21; the split numbers count only moving points with video and a valid label. The video container metadata (frame count, resolution, frame rate) was read by the earlier repository's [`hdd/probe_videos.sh`](https://github.com/Euswbnix/CSC413_Project/blob/b209e2e/hdd/probe_videos.sh); the interval breakdown of the mixed-frame-rate session was computed separately.
