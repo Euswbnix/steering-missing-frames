@@ -146,7 +146,6 @@ The decisions for the team are in [`discussion_2026-09-21_next_steps.md`](https:
 ## Reproduction
 
 ```bash
-. hdd/env.sh   # on the server: caches and temporary files stay under ~/workspace
 python hdd/week1_checks.py --raw ~/workspace/hdd/raw --split trn_data_info.json --out ~/workspace/hdd/checks --fallback-ratio 3.6
 python hdd/timestamp_gaps.py --raw ~/workspace/hdd/raw --out ~/workspace/hdd/checks/timestamp_gaps.json
 python hdd/geo_split_feasibility.py --tracks ~/workspace/hdd/checks/tracks_1hz.npz --split trn_data_info.json \

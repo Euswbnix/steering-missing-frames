@@ -11,7 +11,7 @@ Modes (--swanlab, default $CSC413_SWANLAB, else auto):
            restarted keeps one continuous chart
   offline  keep the log under $SWANLAB_LOG_DIR only; upload later with `swanlab sync <dir>`
   off      do not import swanlab at all (always the case under pytest)
-Logs go to $SWANLAB_LOG_DIR (hdd/env.sh points it into ~/workspace), else ./swanlog.
+Logs go to $SWANLAB_LOG_DIR if set, else ./swanlog.
 $CSC413_SWANLAB_PROJECT replaces the script's project name (e.g. for smoke tests).
 """
 import os
